@@ -1,1 +1,63 @@
+#beginning stages
 
+
+import tweepy
+import pandas as pd
+
+
+# Step 1: Authenticate with the Twitter API
+api_key = "YOUR_API_KEY"
+api_secret = "YOUR_API_SECRET"
+access_token = "1449807555312635906-QvFmw5pI3SVJ9o8Od4pI564G9gHy3q"
+access_token_secret = "gGELNF0bX55LXzsM2cu4J85sf2sUrIbJVreip4UdxDrBW"
+
+
+
+# Authenticate to the Twitter API
+auth = tweepy.OAuthHandler(api_key, api_secret)
+auth.set_access_token(access_token, access_token_secret)
+api = tweepy.API(auth, wait_on_rate_limit=True)
+
+# Step 2: Define the candidates' Twitter handles
+republican_candidates = [
+    "realDonaldTrump",  # Donald Trump
+    "RonDeSantis",      # Ron DeSantis
+    "NikkiHaley",       # Nikki Haley
+    "Mike_Pence",       # Mike Pence
+    "VivekGRamaswamy"   # Vivek Ramaswamy
+]
+
+# Step 3: Function to fetch tweets
+def fetch_tweets(handle, count=100):
+    """
+    Fetch tweets from a specific Twitter handle.
+    Args:
+        handle (str): The Twitter handle to fetch tweets from.
+        count (int): The number of recent tweets to fetch.
+    Returns:
+        DataFrame: A DataFrame of tweets with relevant information.
+    """
+    tweets = []
+    try:
+        for tweet in tweepy.Cursor(api.user_timeline, screen_name=handle, tweet_mode="extended").items(count):
+            tweets.append({
+                "Handle": handle,
+                "Tweet": tweet.full_text,
+                "Created_At": tweet.created_at,
+                "Retweets": tweet.retweet_count,
+                "Likes": tweet.favorite_count
+            })
+    except Exception as e:
+        print(f"An error occurred for {handle}: {e}")
+    return pd.DataFrame(tweets)
+
+# Step 4: Fetch tweets for all candidates
+all_tweets = pd.DataFrame()
+for candidate in republican_candidates:
+    print(f"Fetching tweets for {candidate}...")
+    candidate_tweets = fetch_tweets(candidate, count=100)  # Fetch last 100 tweets
+    all_tweets = pd.concat([all_tweets, candidate_tweets], ignore_index=True)
+
+# Step 5: Save the data to a CSV file
+all_tweets.to_csv("republican_candidates_tweets.csv", index=False)
+print("Tweets have been saved to 'republican_candidates_tweets.csv'")
