@@ -1,0 +1,337 @@
+import nltk
+
+nltk.download('omw-1.4')  #Open Multilingual Word Net (OMW), a database which provides synonyms and relationships b/w words in multiple languages
+nltk.download('stopwords') #A list of common stopwords
+nltk.download('wordnet')  #WordNet, a lexical databases that groups English words into sets of synonyms
+
+
+# Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt #Basic data visualizations
+import plotly.express as px #Creates interactive visualizations, higher-level, makes data visualization more engaging
+
+# Libraries for Sentiment Analysis
+import re
+import nltk
+from nltk.corpus import stopwords #a corpus in NLTK
+from nltk.corpus import wordnet #Used for lemmatization
+from nltk.stem import WordNetLemmatizer #A class from NLTK
+from textblob import TextBlob #Use it for Sentiment Analysis
+from wordcloud import WordCloud #generates word clouds, visual representations of most frequent words in a dataset; larger words indicate higher frequencies
+
+
+from wordcloud import WordCloud, STOPWORDS
+# to avoid warnings
+import warnings
+warnings.filterwarnings('ignore')
+
+
+
+# reading datasets
+tweets = pd.read_csv("train.csv", lineterminator='\n')
+
+
+#Data Preprocessing
+
+
+#Drop missing values
+
+
+# dropping null values if they exist
+tweets.dropna(inplace=True)
+
+
+
+
+#print(tweets['user_handle'].value_counts())
+#print(tweets['party'].value_counts())
+#print(tweets['candidate'].value_counts())
+
+
+
+#Get all Candidates
+unique_values = tweets['candidate'].drop_duplicates()
+#print("Unique values:", unique_values.tolist())
+
+
+# Group Data by Candidate
+grouped = tweets.groupby('candidate')
+
+# Access each candidate's data
+#for candidate, group in grouped:
+    #print(f"\n{candidate}'s DataFrame:")
+    #print(group)
+
+#EDA
+
+# Group the data by 'candidate' and count the
+# number of tweets for each candidate
+tweets_count = tweets.groupby('candidate')['tweet_text'].count().reset_index()
+
+# Interactive bar chart
+#fig = px.bar(tweets_count, x='candidate', y='tweet_text', color='candidate',
+             #color_discrete_map={'Donald Trump': 'pink', 'Kamala Harris': 'blue', 'Jill Stein': 'red', 'Robert Kennedy': 'orange', 'Chase Oliver': 'green'},
+             #labels={'candidate': 'Candidates', 'tweet_text': 'Number of Tweets'},
+             #title='Tweets for Candidates')
+
+# Show the chart
+#fig.show()
+
+#Compare number of likes among candidates
+# Interactive bar chart
+#likes_comparison = tweets.groupby('candidate')['likes'].sum().reset_index()
+#fig = px.bar(likes_comparison, x='candidate', y='likes', color='candidate',
+             #color_discrete_map={'Donald Trump': 'pink', 'Kamala Harris': 'blue', 'Jill Stein': 'red', 'Robert Kennedy': 'orange', 'Chase Oliver': 'green'},
+             #labels={'candidate': 'Candidate', 'likes': 'Total Likes'},
+             #title='Comparison of Likes')
+
+# Update the layout with a black theme
+#fig.update_layout(plot_bgcolor='black',
+                  #paper_bgcolor='black', font_color='white')
+
+# Show the chart
+#fig.show()
+
+
+#Compare number of retweets among candidates
+
+# Interactive bar chart
+#retweets_comparison = tweets.groupby('candidate')['retweets'].sum().reset_index()
+#fig = px.bar(retweets_comparison, x='candidate', y='retweets', color='candidate',
+             #color_discrete_map={'Donald Trump': 'pink', 'Kamala Harris': 'blue', 'Jill Stein': 'red', 'Robert Kennedy': 'orange', 'Chase Oliver': 'green'},
+             #labels={'candidate': 'Candidate', 'retweets': 'Total Retweets'},
+             #title='Comparison of Retweets')
+
+# Update the layout with a black theme
+#fig.update_layout(plot_bgcolor='black',
+                  #paper_bgcolor='black', font_color='white')
+
+# Show the chart
+#fig.show()
+
+
+
+#Sentiment Analysis for prediction of election results
+
+
+def clean(text):
+    # Remove URLs
+    text = re.sub(r'https?://\S+|www\.\S+', '', str(text))
+
+    # Convert text to lowercase
+    text = text.lower()
+
+    # Replace anything other than alphabets a-z with a space
+    text = re.sub('[^a-z]', ' ', text)
+
+    # Split the text into single words
+    text = text.split()
+
+    # Initialize WordNetLemmatizer
+    lm = WordNetLemmatizer()
+
+    # Lemmatize words and remove stopwords
+    text = [lm.lemmatize(word) for word in text if word not in set(
+        stopwords.words('english'))]
+
+    # Join the words back into a sentence
+    text = ' '.join(word for word in text)
+
+    return text
+
+
+#Get polarity, subjectivity, and analysis
+
+def getpolarity(text):
+    return TextBlob(text).sentiment.polarity
+
+def getsubjectivity(text):
+    return TextBlob(text).sentiment.subjectivity
+
+def getAnalysis(score):
+    if score < 0:
+        return 'negative'
+    elif score == 0:
+        return 'neutral'
+    else:
+        return 'positive'
+    
+
+#Dataframes for each candidate
+
+trump_tweets = tweets[tweets['candidate'] == 'Donald Trump']
+
+harris_tweets = tweets[tweets['candidate'] == 'Kamala Harris']
+
+
+stein_tweets = tweets[tweets['candidate'] == 'Jill Stein']
+
+
+kennedy_tweets = tweets[tweets['candidate'] == 'Robert Kennedy']
+
+
+
+oliver_tweets = tweets[tweets['candidate'] == 'Chase Oliver']
+
+
+
+trump_tweets['cleantext'] = trump_tweets['tweet_text'].apply(clean)
+
+
+harris_tweets['cleantext'] = harris_tweets['tweet_text'].apply(clean)
+
+
+stein_tweets['cleantext'] = stein_tweets['tweet_text'].apply(clean)
+
+
+kennedy_tweets['cleantext'] = kennedy_tweets['tweet_text'].apply(clean)
+
+
+oliver_tweets['cleantext'] = oliver_tweets['tweet_text'].apply(clean)
+
+
+#Subjectivity
+
+trump_tweets['subjectivity'] = trump_tweets['cleantext'].apply(getsubjectivity)
+
+
+
+harris_tweets['subjectivity'] = harris_tweets['cleantext'].apply(getsubjectivity)
+
+
+stein_tweets['subjectivity'] = stein_tweets['cleantext'].apply(getsubjectivity)
+
+kennedy_tweets['subjectivity'] = kennedy_tweets['cleantext'].apply(getsubjectivity)
+
+
+oliver_tweets['subjectivity'] = oliver_tweets['cleantext'].apply(getsubjectivity)
+
+
+
+#Polarity
+
+
+trump_tweets['polarity'] = trump_tweets['cleantext'].apply(getpolarity)
+
+
+harris_tweets['polarity'] = harris_tweets['cleantext'].apply(getpolarity)
+
+
+oliver_tweets['polarity'] = oliver_tweets['cleantext'].apply(getpolarity)
+
+
+stein_tweets['polarity'] = stein_tweets['cleantext'].apply(getpolarity)
+
+
+kennedy_tweets['polarity'] = kennedy_tweets['cleantext'].apply(getpolarity)
+
+
+#Sentiments
+
+trump_tweets['analysis'] = trump_tweets['polarity'].apply(getAnalysis)
+harris_tweets['analysis'] = harris_tweets['polarity'].apply(getAnalysis)
+stein_tweets['analysis'] = stein_tweets['polarity'].apply(getAnalysis)
+oliver_tweets['analysis'] = oliver_tweets['polarity'].apply(getAnalysis)
+kennedy_tweets['analysis'] = kennedy_tweets['polarity'].apply(getAnalysis)
+
+#Distribution of Sentiments
+
+# how much data is positive/negetive/neutral
+plt.style.use('dark_background')  # Adding black theme
+
+# Define colors for each bar
+colors = ['orange', 'blue', 'red']
+
+plt.figure(figsize=(7, 5))
+(trump_tweets.analysis.value_counts(normalize=True) * 100).plot.bar(color=colors)
+plt.ylabel("%age of tweets")
+plt.title("Distribution of Sentiments towards Trump")
+#plt.show()
+
+
+plt.figure(figsize=(7, 5))
+(harris_tweets.analysis.value_counts(normalize=True) * 100).plot.bar(color=colors)
+plt.ylabel("%age of tweets")
+plt.title("Distribution of Sentiments towards Harris")
+#plt.show()
+
+
+
+
+plt.figure(figsize=(7, 5))
+(kennedy_tweets.analysis.value_counts(normalize=True) * 100).plot.bar(color=colors)
+plt.ylabel("%age of tweets")
+plt.title("Distribution of Sentiments towards Kennedy")
+#plt.show()
+
+
+plt.figure(figsize=(7, 5))
+(oliver_tweets.analysis.value_counts(normalize=True) * 100).plot.bar(color=colors)
+plt.ylabel("%age of tweets")
+plt.title("Distribution of Sentiments towards Oliver")
+#plt.show()
+
+
+
+plt.figure(figsize=(7, 5))
+(stein_tweets.analysis.value_counts(normalize=True) * 100).plot.bar(color=colors)
+plt.ylabel("%age of tweets")
+plt.title("Distribution of Sentiments towards Stein")
+#plt.show()
+
+
+def word_cloud(wd_list): 
+    stopwords = set(STOPWORDS)
+    all_words = ' '.join(wd_list)
+    wordcloud = WordCloud(background_color='black', 
+                        stopwords=stopwords, 
+                        width=1600, height=800, max_words=100, max_font_size=200, 
+                        colormap="viridis").generate(all_words) 
+    plt.figure(figsize=(12, 10)) 
+    plt.axis('off') 
+    plt.imshow(wordcloud) 
+
+#print(word_cloud(trump_tweets['cleantext'][:5000]))
+
+
+#print(word_cloud(harris_tweets['cleantext'][:5000]))
+
+
+#print(word_cloud(oliver_tweets['cleantext'][:5000]))
+
+
+
+#print(word_cloud(stein_tweets['cleantext'][:5000]))
+
+
+#print(word_cloud(kennedy_tweets['cleantext'][:5000]))
+
+
+#Analyze sentiments to predict results
+
+
+print(trump_tweets.analysis.value_counts(normalize=True)*100)
+
+
+
+print(harris_tweets.analysis.value_counts(normalize=True)*100)
+
+
+
+print(stein_tweets.analysis.value_counts(normalize=True)*100)
+
+
+print(oliver_tweets.analysis.value_counts(normalize=True)*100)
+
+print(kennedy_tweets.analysis.value_counts(normalize=True)*100)
+
+
+#Both Kennedy and Stein talked about primarily neutrally with Kennedy winning
+
+
+#Jill Stein talked about positively
+
+
+#Kind of an ass model as it doesn't reflect real social media API
+
